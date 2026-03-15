@@ -60,6 +60,7 @@ beforeAll(() => {
       Size: jest.fn((w: number, h: number) => ({ w, h })),
       Point: jest.fn((x: number, y: number) => ({ x, y })),
       RenderingType: { RASTER: 'RASTER', VECTOR: 'VECTOR' },
+      ImageMapType: jest.fn(() => ({})),
     },
   }
 })

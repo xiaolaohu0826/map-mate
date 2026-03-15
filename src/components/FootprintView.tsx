@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState, useCallback } from 'react'
-import { Plus, Trash2, MapPin, X, Pencil, ChevronLeft, ChevronRight, Layers } from 'lucide-react'
+import { Plus, Trash2, MapPin, X, Pencil, ChevronLeft, ChevronRight } from 'lucide-react'
 import { loadMaps, loadPlaces } from '@/lib/mapLoader'
 import { darkMapStyles } from '@/lib/mapStyles'
 import { supabase } from '@/lib/supabase'
@@ -114,7 +114,7 @@ interface DraftWaypoint {
   inputValue: string
 }
 
-export default function FootprintView() {
+export default function FootprintView({ topoVisible = false }: { topoVisible?: boolean }) {
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<google.maps.Map | null>(null)
   const infoWindowRef = useRef<google.maps.InfoWindow | null>(null)
@@ -126,7 +126,6 @@ export default function FootprintView() {
   const [isCreating, setIsCreating] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [panelOpen, setPanelOpen] = useState(true)
-  const [topoVisible, setTopoVisible] = useState(false)
   const [draftTitle, setDraftTitle] = useState('')
   const [draftWaypoints, setDraftWaypoints] = useState<DraftWaypoint[]>([
     { id: 'w0', inputValue: '' },
@@ -241,6 +240,7 @@ export default function FootprintView() {
         styles: darkMapStyles,
         gestureHandling: 'greedy',
         clickableIcons: false,
+        fullscreenControl: false,
         renderingType: google.maps.RenderingType.RASTER,
       })
       mapRef.current = map
@@ -372,19 +372,6 @@ export default function FootprintView() {
           <ChevronRight className="w-5 h-5" />
         </button>
       )}
-
-      {/* Topo layer toggle */}
-      <button
-        onClick={() => setTopoVisible(v => !v)}
-        title={topoVisible ? '隐藏高程图' : '显示高程图'}
-        className={`absolute top-4 right-4 z-10 p-2 backdrop-blur-sm border rounded-xl transition-colors ${
-          topoVisible
-            ? 'bg-indigo-600 border-indigo-500 text-white'
-            : 'bg-gray-900/95 border-gray-700 text-gray-300 hover:text-white'
-        }`}
-      >
-        <Layers className="w-5 h-5" />
-      </button>
 
       {/* Side panel */}
       <div className={`absolute top-0 left-0 h-full w-48 bg-gray-900/95 backdrop-blur-sm border-r border-gray-800 flex flex-col transition-transform duration-300 ${panelOpen ? 'translate-x-0' : '-translate-x-full'}`}>

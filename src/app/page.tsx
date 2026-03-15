@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useEffect, useRef } from 'react'
 import dynamic from 'next/dynamic'
+import { Layers } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { MarkerData, MarkerStyle } from '@/types'
 import MarkerDialog from '@/components/MarkerDialog'
@@ -23,6 +24,7 @@ export default function Home() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [focusTarget, setFocusTarget] = useState<MarkerData | null>(null)
   const [searchResult, setSearchResult] = useState<PlaceResult | null>(null)
+  const [topoVisible, setTopoVisible] = useState(false)
   const panToRef = useRef<((lat: number, lng: number, zoom?: number) => void) | null>(null)
 
   useEffect(() => {
@@ -77,6 +79,7 @@ export default function Home() {
             onPanReady={handlePanReady}
             searchResult={searchResult}
             onSearchResultClear={() => setSearchResult(null)}
+            topoVisible={topoVisible}
           />
           <SearchBar onPlaceSelected={handlePlaceSelected} />
           <NotesSidebar
@@ -92,11 +95,24 @@ export default function Home() {
 
         {/* Footprint tab */}
         <div className={activeTab === 'footprint' ? 'absolute inset-0' : 'hidden'}>
-          <FootprintView />
+          <FootprintView topoVisible={topoVisible} />
         </div>
 
         {/* Global overlays — always visible regardless of tab */}
-        <PresenceAvatars />
+        <div className="absolute top-4 right-4 z-20 flex flex-col items-end gap-2">
+          <PresenceAvatars />
+          <button
+            onClick={() => setTopoVisible(v => !v)}
+            title={topoVisible ? '隐藏高程图' : '显示高程图'}
+            className={`p-2 backdrop-blur-sm border rounded-xl transition-colors ${
+              topoVisible
+                ? 'bg-indigo-600 border-indigo-500 text-white'
+                : 'bg-gray-900/95 border-gray-700 text-gray-300 hover:text-white'
+            }`}
+          >
+            <Layers className="w-5 h-5" />
+          </button>
+        </div>
         <MusicPlayer />
       </div>
 

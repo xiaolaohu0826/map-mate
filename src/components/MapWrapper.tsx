@@ -14,6 +14,7 @@ interface MapWrapperProps {
   onPanReady: (panFn: (lat: number, lng: number, zoom?: number) => void) => void
   searchResult: PlaceResult | null
   onSearchResultClear: () => void
+  topoVisible?: boolean
 }
 
 function createSearchPinIcon(): string {
@@ -40,6 +41,7 @@ export default function MapWrapper({
   onPanReady,
   searchResult,
   onSearchResultClear,
+  topoVisible = false,
 }: MapWrapperProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const zoomLabelRef = useRef<HTMLDivElement>(null)
@@ -50,6 +52,7 @@ export default function MapWrapper({
   const infoWindowRef = useRef<google.maps.InfoWindow | null>(null)
   const poiMarkersRef = useRef<google.maps.Marker[]>([])
   const searchMarkerRef = useRef<google.maps.Marker | null>(null)
+  const topoLayerRef = useRef<google.maps.ImageMapType | null>(null)
 
   const clearPoiMarkers = useCallback(() => {
     poiMarkersRef.current.forEach(m => m.setMap(null))
@@ -165,10 +168,18 @@ export default function MapWrapper({
         styles: darkMapStyles,
         gestureHandling: 'greedy',
         clickableIcons: false,
+        fullscreenControl: false,
         renderingType: google.maps.RenderingType.RASTER,
       })
       mapRef.current = map
       infoWindowRef.current = new google.maps.InfoWindow()
+      topoLayerRef.current = new google.maps.ImageMapType({
+        getTileUrl: (coord, zoom) =>
+          `https://tile.opentopomap.org/${zoom}/${coord.x}/${coord.y}.png`,
+        tileSize: new google.maps.Size(256, 256),
+        opacity: 0.4,
+        name: 'Topo',
+      })
 
 
       map.addListener('click', () => {
@@ -254,6 +265,18 @@ export default function MapWrapper({
     }
     onFocusComplete()
   }, [focusTarget, onFocusComplete])
+
+  // Toggle topo overlay
+  useEffect(() => {
+    const map = mapRef.current
+    const layer = topoLayerRef.current
+    if (!map || !layer) return
+    if (topoVisible) {
+      if (map.overlayMapTypes.getLength() === 0) map.overlayMapTypes.push(layer)
+    } else {
+      map.overlayMapTypes.clear()
+    }
+  }, [topoVisible])
 
   // Show temporary search result marker
   useEffect(() => {

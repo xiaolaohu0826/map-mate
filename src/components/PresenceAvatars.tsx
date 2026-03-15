@@ -52,7 +52,7 @@ export default function PresenceAvatars() {
   if (users.length === 0) return null
 
   return (
-    <div className="absolute top-4 right-4 z-10 flex items-center gap-2">
+    <div className="flex items-center gap-2">
       <div className="flex -space-x-2">
         {users.map(user => (
           <div
@@ -65,7 +65,7 @@ export default function PresenceAvatars() {
           </div>
         ))}
       </div>
-      <span className="text-white/60 text-xs bg-gray-900/70 px-2 py-0.5 rounded-full">
+      <span className="text-white/60 text-xs bg-gray-900/70 px-2 py-0.5 rounded-full pointer-events-none">
         {users.length} 在线
       </span>
     </div>
