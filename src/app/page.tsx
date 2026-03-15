@@ -10,6 +10,7 @@ import NotesSidebar from '@/components/NotesSidebar'
 import MusicPlayer from '@/components/MusicPlayer'
 import PresenceAvatars from '@/components/PresenceAvatars'
 import BottomTabBar, { Tab } from '@/components/BottomTabBar'
+import AvatarUpload from '@/components/AvatarUpload'
 import { PlaceResult } from '@/components/SearchBar'
 
 const MapWrapper = dynamic(() => import('@/components/MapWrapper'), { ssr: false })
@@ -101,17 +102,20 @@ export default function Home() {
         {/* Global overlays — always visible regardless of tab */}
         <div className="absolute top-4 right-4 z-20 flex flex-col items-end gap-2">
           <PresenceAvatars />
-          <button
-            onClick={() => setTopoVisible(v => !v)}
-            title={topoVisible ? '隐藏高程图' : '显示高程图'}
-            className={`p-2 backdrop-blur-sm border rounded-xl transition-colors ${
-              topoVisible
-                ? 'bg-indigo-600 border-indigo-500 text-white'
-                : 'bg-gray-900/95 border-gray-700 text-gray-300 hover:text-white'
-            }`}
-          >
-            <Layers className="w-5 h-5" />
-          </button>
+          <div className="flex gap-2">
+            <AvatarUpload />
+            <button
+              onClick={() => setTopoVisible(v => !v)}
+              title={topoVisible ? '隐藏高程图' : '显示高程图'}
+              className={`p-2 backdrop-blur-sm border rounded-xl transition-colors ${
+                topoVisible
+                  ? 'bg-indigo-600 border-indigo-500 text-white'
+                  : 'bg-gray-900/95 border-gray-700 text-gray-300 hover:text-white'
+              }`}
+            >
+              <Layers className="w-5 h-5" />
+            </button>
+          </div>
         </div>
         <MusicPlayer />
       </div>

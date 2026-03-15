@@ -10,17 +10,40 @@ interface PresenceUser {
   user_id: string
   emoji: string
   color: string
+  avatar?: string
 }
 
-function getOrCreateIdentity(): PresenceUser {
+function pickRandom<T>(arr: T[]): T {
+  return arr[Math.floor(Math.random() * arr.length)]
+}
+
+async function getOrCreateIdentity(): Promise<PresenceUser> {
+  // Fetch available avatars
+  let avatarFile: string | undefined
+  try {
+    const res = await fetch('/api/avatar')
+    const list: string[] = await res.json()
+    if (list.length > 0) avatarFile = pickRandom(list)
+  } catch {}
+
   try {
     const stored = sessionStorage.getItem('map-mate-identity')
-    if (stored) return JSON.parse(stored) as PresenceUser
+    if (stored) {
+      const identity = JSON.parse(stored) as PresenceUser
+      // Refresh avatar if new ones are available but this session has none
+      if (!identity.avatar && avatarFile) {
+        identity.avatar = avatarFile
+        sessionStorage.setItem('map-mate-identity', JSON.stringify(identity))
+      }
+      return identity
+    }
   } catch {}
+
   const identity: PresenceUser = {
     user_id: Math.random().toString(36).slice(2),
-    emoji: EMOJIS[Math.floor(Math.random() * EMOJIS.length)],
-    color: COLORS[Math.floor(Math.random() * COLORS.length)],
+    emoji: pickRandom(EMOJIS),
+    color: pickRandom(COLORS),
+    avatar: avatarFile,
   }
   try { sessionStorage.setItem('map-mate-identity', JSON.stringify(identity)) } catch {}
   return identity
@@ -30,23 +53,26 @@ export default function PresenceAvatars() {
   const [users, setUsers] = useState<PresenceUser[]>([])
 
   useEffect(() => {
-    const me = getOrCreateIdentity()
-    const channel = supabase.channel('map-mate-presence', {
-      config: { presence: { key: me.user_id } },
+    let channel: ReturnType<typeof supabase.channel>
+
+    getOrCreateIdentity().then(me => {
+      channel = supabase.channel('map-mate-presence', {
+        config: { presence: { key: me.user_id } },
+      })
+
+      channel
+        .on('presence', { event: 'sync' }, () => {
+          const state = channel.presenceState<PresenceUser>()
+          setUsers(Object.values(state).flat())
+        })
+        .subscribe(async status => {
+          if (status === 'SUBSCRIBED') {
+            await channel.track(me)
+          }
+        })
     })
 
-    channel
-      .on('presence', { event: 'sync' }, () => {
-        const state = channel.presenceState<PresenceUser>()
-        setUsers(Object.values(state).flat())
-      })
-      .subscribe(async status => {
-        if (status === 'SUBSCRIBED') {
-          await channel.track(me)
-        }
-      })
-
-    return () => { supabase.removeChannel(channel) }
+    return () => { if (channel) supabase.removeChannel(channel) }
   }, [])
 
   if (users.length === 0) return null
@@ -59,9 +85,17 @@ export default function PresenceAvatars() {
             key={user.user_id}
             title={`在线 · ${user.emoji}`}
             style={{ backgroundColor: user.color }}
-            className="w-9 h-9 rounded-full flex items-center justify-center text-lg shadow-lg ring-2 ring-gray-900"
+            className="w-9 h-9 rounded-full flex items-center justify-center text-lg shadow-lg ring-2 ring-gray-900 overflow-hidden flex-shrink-0"
           >
-            {user.emoji}
+            {user.avatar ? (
+              <img
+                src={`/avatar/${user.avatar}`}
+                alt={user.emoji}
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              user.emoji
+            )}
           </div>
         ))}
       </div>
