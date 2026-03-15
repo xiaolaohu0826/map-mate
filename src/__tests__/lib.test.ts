@@ -10,8 +10,8 @@ const mockImportLibrary = jest.fn((lib: string) =>
 )
 
 jest.mock('@googlemaps/js-api-loader', () => ({
-  setOptions: (...args: unknown[]) => mockSetOptions(...args),
-  importLibrary: (...args: unknown[]) => mockImportLibrary(...args),
+  setOptions: (opts: unknown) => mockSetOptions(opts),
+  importLibrary: (lib: string) => mockImportLibrary(lib),
 }))
 
 describe('mapLoader', () => {

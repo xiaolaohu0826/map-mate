@@ -17,7 +17,7 @@ export default function Home() {
   const [pendingLoc, setPendingLoc] = useState<{ lat: number; lng: number; placeName?: string } | null>(null)
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [focusTarget, setFocusTarget] = useState<MarkerData | null>(null)
-  const panToRef = useRef<((lat: number, lng: number) => void) | null>(null)
+  const panToRef = useRef<((lat: number, lng: number, zoom?: number) => void) | null>(null)
 
   // Load existing markers from Supabase
   useEffect(() => {
