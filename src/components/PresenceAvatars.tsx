@@ -30,11 +30,13 @@ async function getOrCreateIdentity(): Promise<PresenceUser> {
     const stored = sessionStorage.getItem('map-mate-identity')
     if (stored) {
       const identity = JSON.parse(stored) as PresenceUser
-      // Refresh avatar if new ones are available but this session has none
-      if (!identity.avatar && avatarFile) {
+      // Always sync avatar with latest available list
+      if (avatarFile) {
         identity.avatar = avatarFile
-        sessionStorage.setItem('map-mate-identity', JSON.stringify(identity))
+      } else {
+        delete identity.avatar
       }
+      sessionStorage.setItem('map-mate-identity', JSON.stringify(identity))
       return identity
     }
   } catch {}
