@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState, useCallback } from 'react'
-import { Plus, Trash2, MapPin, X, Pencil, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Plus, Trash2, MapPin, X, Pencil, ChevronLeft, ChevronRight, Layers } from 'lucide-react'
 import { loadMaps, loadPlaces } from '@/lib/mapLoader'
 import { darkMapStyles } from '@/lib/mapStyles'
 import { supabase } from '@/lib/supabase'
@@ -119,12 +119,14 @@ export default function FootprintView() {
   const mapRef = useRef<google.maps.Map | null>(null)
   const infoWindowRef = useRef<google.maps.InfoWindow | null>(null)
   const routeLayerRef = useRef<(google.maps.Polyline | google.maps.Marker)[]>([])
+  const topoLayerRef = useRef<google.maps.ImageMapType | null>(null)
 
   const [footprints, setFootprints] = useState<Footprint[]>([])
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [isCreating, setIsCreating] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [panelOpen, setPanelOpen] = useState(true)
+  const [topoVisible, setTopoVisible] = useState(false)
   const [draftTitle, setDraftTitle] = useState('')
   const [draftWaypoints, setDraftWaypoints] = useState<DraftWaypoint[]>([
     { id: 'w0', inputValue: '' },
@@ -245,6 +247,15 @@ export default function FootprintView() {
       infoWindowRef.current = new google.maps.InfoWindow()
       map.addListener('click', () => infoWindowRef.current?.close())
 
+      const topoLayer = new google.maps.ImageMapType({
+        getTileUrl: (coord, zoom) =>
+          `https://tile.opentopomap.org/${zoom}/${coord.x}/${coord.y}.png`,
+        tileSize: new google.maps.Size(256, 256),
+        opacity: 0.4,
+        name: 'Topo',
+      })
+      topoLayerRef.current = topoLayer
+
       const { data } = await supabase
         .from('footprints')
         .select('*')
@@ -254,6 +265,18 @@ export default function FootprintView() {
     init()
     return () => { cancelled = true }
   }, [])
+
+  // Toggle topo overlay
+  useEffect(() => {
+    const map = mapRef.current
+    const layer = topoLayerRef.current
+    if (!map || !layer) return
+    if (topoVisible) {
+      if (map.overlayMapTypes.getLength() === 0) map.overlayMapTypes.push(layer)
+    } else {
+      map.overlayMapTypes.clear()
+    }
+  }, [topoVisible])
 
   // Redraw when viewing saved footprints
   useEffect(() => {
@@ -349,6 +372,19 @@ export default function FootprintView() {
           <ChevronRight className="w-5 h-5" />
         </button>
       )}
+
+      {/* Topo layer toggle */}
+      <button
+        onClick={() => setTopoVisible(v => !v)}
+        title={topoVisible ? '隐藏高程图' : '显示高程图'}
+        className={`absolute top-4 right-4 z-10 p-2 backdrop-blur-sm border rounded-xl transition-colors ${
+          topoVisible
+            ? 'bg-indigo-600 border-indigo-500 text-white'
+            : 'bg-gray-900/95 border-gray-700 text-gray-300 hover:text-white'
+        }`}
+      >
+        <Layers className="w-5 h-5" />
+      </button>
 
       {/* Side panel */}
       <div className={`absolute top-0 left-0 h-full w-48 bg-gray-900/95 backdrop-blur-sm border-r border-gray-800 flex flex-col transition-transform duration-300 ${panelOpen ? 'translate-x-0' : '-translate-x-full'}`}>
