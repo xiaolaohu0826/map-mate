@@ -16,6 +16,15 @@ interface MapWrapperProps {
   onSearchResultClear: () => void
 }
 
+function createSearchPinIcon(): string {
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="44" viewBox="0 0 32 44">
+    <path d="M16 0C7.163 0 0 7.163 0 16c0 10 16 28 16 28S32 26 32 16C32 7.163 24.837 0 16 0z" fill="#4f46e5"/>
+    <circle cx="16" cy="16" r="7" fill="white"/>
+    <circle cx="16" cy="16" r="4" fill="#4f46e5"/>
+  </svg>`
+  return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`
+}
+
 function createEmojiIcon(emoji: string): string {
   const encoded = encodeURIComponent(
     `<svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 36 36"><text y="30" font-size="28" text-anchor="middle" x="18">${emoji}</text></svg>`
@@ -241,9 +250,9 @@ export default function MapWrapper({
       map,
       title: searchResult.name,
       icon: {
-        url: createEmojiIcon('📍'),
-        scaledSize: new google.maps.Size(40, 40),
-        anchor: new google.maps.Point(20, 40),
+        url: createSearchPinIcon(),
+        scaledSize: new google.maps.Size(32, 44),
+        anchor: new google.maps.Point(16, 44),
       },
     })
     searchMarkerRef.current = marker
