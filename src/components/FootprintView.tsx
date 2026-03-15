@@ -7,14 +7,42 @@ import { darkMapStyles } from '@/lib/mapStyles'
 import { supabase } from '@/lib/supabase'
 import { Footprint, Waypoint } from '@/types'
 
-const LEG_COLORS = ['#ef4444', '#f97316', '#eab308', '#22c55e', '#3b82f6', '#a855f7']
+const LEG_COLORS = ['#22d3ee', '#f472b6', '#a78bfa', '#34d399', '#fb923c', '#facc15']
 
-function createNumberedIcon(num: number, color: string): string {
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 30 30">
-    <circle cx="15" cy="15" r="13" fill="${color}" stroke="white" stroke-width="2"/>
-    <text x="15" y="20" font-size="13" text-anchor="middle" fill="white" font-weight="bold" font-family="sans-serif">${num}</text>
+function createGlowMarker(num: number, color: string): string {
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40">
+    <circle cx="20" cy="20" r="19" fill="${color}" fill-opacity="0.15"/>
+    <circle cx="20" cy="20" r="12" fill="${color}" fill-opacity="0.25"/>
+    <circle cx="20" cy="20" r="8" fill="${color}" fill-opacity="0.9"/>
+    <circle cx="20" cy="20" r="7" fill="none" stroke="white" stroke-width="1.2" stroke-opacity="0.7"/>
+    <text x="20" y="24" font-size="9" text-anchor="middle" fill="white" font-weight="bold" font-family="sans-serif" letter-spacing="0">${num}</text>
   </svg>`
   return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`
+}
+
+// Quadratic Bezier arc between two lat/lng points
+function generateArcPath(
+  from: google.maps.LatLngLiteral,
+  to: google.maps.LatLngLiteral,
+  curvature: number,
+  numPoints = 80
+): google.maps.LatLngLiteral[] {
+  const dlat = to.lat - from.lat
+  const dlng = to.lng - from.lng
+  const cpLat = (from.lat + to.lat) / 2 + (-dlng * curvature)
+  const cpLng = (from.lng + to.lng) / 2 + (dlat * curvature)
+  return Array.from({ length: numPoints + 1 }, (_, i) => {
+    const t = i / numPoints
+    const u = 1 - t
+    return {
+      lat: u * u * from.lat + 2 * u * t * cpLat + t * t * to.lat,
+      lng: u * u * from.lng + 2 * u * t * cpLng + t * t * to.lng,
+    }
+  })
+}
+
+function samePoint(a: Waypoint, b: Waypoint): boolean {
+  return Math.abs(a.lat - b.lat) < 0.001 && Math.abs(a.lng - b.lng) < 0.001
 }
 
 // ── WaypointInput ────────────────────────────────────────────────────────────
@@ -120,21 +148,23 @@ export default function FootprintView() {
         map,
         title: wp.name,
         icon: {
-          url: createNumberedIcon(i + 1, color),
-          scaledSize: new google.maps.Size(30, 30),
-          anchor: new google.maps.Point(15, 15),
+          url: createGlowMarker(i + 1, color),
+          scaledSize: new google.maps.Size(40, 40),
+          anchor: new google.maps.Point(20, 20),
         },
+        zIndex: 10,
       })
       marker.addListener('click', () => {
         const iw = infoWindowRef.current
         if (!iw) return
         iw.setContent(
-          `<div style="color:#000;padding:8px;min-width:180px;font-family:sans-serif">
-            <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
-              <span style="background:${color};color:#fff;border-radius:50%;width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:bold;flex-shrink:0">${i + 1}</span>
+          `<div style="color:#000;padding:8px;min-width:190px;font-family:sans-serif">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+              <span style="background:${color};color:#fff;border-radius:50%;width:22px;height:22px;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:bold;flex-shrink:0">${i + 1}</span>
               <p style="margin:0;font-size:14px;font-weight:bold">${wp.name}</p>
             </div>
-            ${wp.address ? `<p style="margin:0 0 6px;font-size:12px;color:#555">${wp.address}</p>` : ''}
+            ${wp.address ? `<p style="margin:0 0 6px 30px;font-size:12px;color:#555">${wp.address}</p>` : ''}
+            <a href="https://maps.google.com/?q=${wp.lat},${wp.lng}" target="_blank" style="display:block;margin-left:30px;font-size:12px;color:#1a73e8">在 Google Maps 查看 →</a>
           </div>`
         )
         iw.open(map, marker)
@@ -143,21 +173,44 @@ export default function FootprintView() {
 
       if (i < waypoints.length - 1) {
         const next = waypoints[i + 1]
+        // Detect if the reverse of this segment was already drawn → flip curvature
+        const hasReverse = waypoints
+          .slice(0, i)
+          .some((_, j) => samePoint(waypoints[j], next) && samePoint(waypoints[j + 1], wp))
+        const curvature = hasReverse ? -0.22 : 0.22
+        const arcPath = generateArcPath(
+          { lat: wp.lat, lng: wp.lng },
+          { lat: next.lat, lng: next.lng },
+          curvature
+        )
         const polyline = new google.maps.Polyline({
-          path: [{ lat: wp.lat, lng: wp.lng }, { lat: next.lat, lng: next.lng }],
+          path: arcPath,
           strokeColor: color,
-          strokeWeight: 2,
-          strokeOpacity: 0.85,
-          icons: [{
-            icon: {
-              path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
-              strokeColor: color,
-              fillColor: color,
-              fillOpacity: 1,
-              scale: 3,
+          strokeWeight: 1.5,
+          strokeOpacity: 0.75,
+          icons: [
+            {
+              icon: {
+                path: google.maps.SymbolPath.CIRCLE,
+                scale: 1.8,
+                fillColor: color,
+                fillOpacity: 0.85,
+                strokeWeight: 0,
+              },
+              offset: '0%',
+              repeat: '8%',
             },
-            offset: '100%',
-          }],
+            {
+              icon: {
+                path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
+                strokeColor: color,
+                fillColor: color,
+                fillOpacity: 1,
+                scale: 2.8,
+              },
+              offset: '100%',
+            },
+          ],
           map,
         })
         routeLayerRef.current.push(polyline)
