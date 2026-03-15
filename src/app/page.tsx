@@ -7,6 +7,7 @@ import { MarkerData, MarkerStyle } from '@/types'
 import MarkerDialog from '@/components/MarkerDialog'
 import NotesSidebar from '@/components/NotesSidebar'
 import MusicPlayer from '@/components/MusicPlayer'
+import PresenceAvatars from '@/components/PresenceAvatars'
 import { PlaceResult } from '@/components/SearchBar'
 
 const MapWrapper = dynamic(() => import('@/components/MapWrapper'), { ssr: false })
@@ -85,6 +86,7 @@ export default function Home() {
         }}
       />
       <MusicPlayer />
+      <PresenceAvatars />
       {dialogOpen && pendingLoc && (
         <MarkerDialog
           open={dialogOpen}
