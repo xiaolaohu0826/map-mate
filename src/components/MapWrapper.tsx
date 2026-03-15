@@ -155,6 +155,10 @@ export default function MapWrapper({
       infoWindowRef.current = new google.maps.InfoWindow()
 
 
+      map.addListener('click', () => {
+        infoWindowRef.current?.close()
+      })
+
       map.addListener('rightclick', (e: google.maps.MapMouseEvent) => {
         if (!e.latLng) return
         onMapClick(e.latLng.lat(), e.latLng.lng())
@@ -257,16 +261,26 @@ export default function MapWrapper({
     })
     searchMarkerRef.current = marker
 
+    marker.addListener('rightclick', () => {
+      onMapClick(searchResult.lat, searchResult.lng, searchResult.name)
+    })
+
+    const content = `<div style="color:#000;padding:8px;min-width:200px;font-family:sans-serif">
+      <p style="margin:0 0 4px;font-size:14px;font-weight:bold">${searchResult.name}</p>
+      <p style="margin:0 0 6px;font-size:12px;color:#555">${searchResult.address}</p>
+      ${searchResult.placeId
+        ? `<a href="https://www.google.com/maps/place/?q=place_id:${searchResult.placeId}" target="_blank" style="font-size:12px;color:#1a73e8">在 Google Maps 查看 →</a>`
+        : ''}
+    </div>`
+
+    marker.addListener('click', () => {
+      if (!infoWindowRef.current) return
+      infoWindowRef.current.setContent(content)
+      infoWindowRef.current.open(map, marker)
+    })
+
     if (infoWindowRef.current) {
-      infoWindowRef.current.setContent(
-        `<div style="color:#000;padding:8px;min-width:200px;font-family:sans-serif">
-          <p style="margin:0 0 4px;font-size:14px;font-weight:bold">${searchResult.name}</p>
-          <p style="margin:0 0 6px;font-size:12px;color:#555">${searchResult.address}</p>
-          ${searchResult.placeId
-            ? `<a href="https://www.google.com/maps/place/?q=place_id:${searchResult.placeId}" target="_blank" style="font-size:12px;color:#1a73e8">在 Google Maps 查看 →</a>`
-            : ''}
-        </div>`
-      )
+      infoWindowRef.current.setContent(content)
       infoWindowRef.current.open(map, marker)
     }
   }, [searchResult])
