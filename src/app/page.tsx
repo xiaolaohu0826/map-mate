@@ -8,12 +8,15 @@ import MarkerDialog from '@/components/MarkerDialog'
 import NotesSidebar from '@/components/NotesSidebar'
 import MusicPlayer from '@/components/MusicPlayer'
 import PresenceAvatars from '@/components/PresenceAvatars'
+import BottomTabBar, { Tab } from '@/components/BottomTabBar'
 import { PlaceResult } from '@/components/SearchBar'
 
 const MapWrapper = dynamic(() => import('@/components/MapWrapper'), { ssr: false })
 const SearchBar = dynamic(() => import('@/components/SearchBar'), { ssr: false })
+const FootprintView = dynamic(() => import('@/components/FootprintView'), { ssr: false })
 
 export default function Home() {
+  const [activeTab, setActiveTab] = useState<Tab>('map')
   const [markers, setMarkers] = useState<MarkerData[]>([])
   const [dialogOpen, setDialogOpen] = useState(false)
   const [pendingLoc, setPendingLoc] = useState<{ lat: number; lng: number; placeName?: string } | null>(null)
@@ -22,7 +25,6 @@ export default function Home() {
   const [searchResult, setSearchResult] = useState<PlaceResult | null>(null)
   const panToRef = useRef<((lat: number, lng: number, zoom?: number) => void) | null>(null)
 
-  // Load existing markers from Supabase
   useEffect(() => {
     supabase
       .from('markers')
@@ -46,9 +48,7 @@ export default function Home() {
         .insert({ lat: pendingLoc.lat, lng: pendingLoc.lng, style, note })
         .select()
         .single()
-      if (!error && data) {
-        setMarkers(prev => [data as MarkerData, ...prev])
-      }
+      if (!error && data) setMarkers(prev => [data as MarkerData, ...prev])
       setDialogOpen(false)
       setPendingLoc(null)
     },
@@ -65,28 +65,41 @@ export default function Home() {
   }, [])
 
   return (
-    <main className="relative w-screen h-screen overflow-hidden bg-gray-950">
-      <MapWrapper
-        markers={markers}
-        onMapClick={handleMapClick}
-        focusTarget={focusTarget}
-        onFocusComplete={() => setFocusTarget(null)}
-        onPanReady={handlePanReady}
-        searchResult={searchResult}
-        onSearchResultClear={() => setSearchResult(null)}
-      />
-      <SearchBar onPlaceSelected={handlePlaceSelected} />
-      <NotesSidebar
-        open={sidebarOpen}
-        onToggle={() => setSidebarOpen(o => !o)}
-        markers={markers}
-        onMarkerFocus={marker => {
-          setFocusTarget(marker)
-          setSidebarOpen(false)
-        }}
-      />
-      <MusicPlayer />
-      <PresenceAvatars />
+    <main className="flex flex-col w-screen h-screen bg-gray-950">
+      <div className="flex-1 relative overflow-hidden min-h-0">
+        {/* Map tab */}
+        <div className={activeTab === 'map' ? 'absolute inset-0' : 'hidden'}>
+          <MapWrapper
+            markers={markers}
+            onMapClick={handleMapClick}
+            focusTarget={focusTarget}
+            onFocusComplete={() => setFocusTarget(null)}
+            onPanReady={handlePanReady}
+            searchResult={searchResult}
+            onSearchResultClear={() => setSearchResult(null)}
+          />
+          <SearchBar onPlaceSelected={handlePlaceSelected} />
+          <NotesSidebar
+            open={sidebarOpen}
+            onToggle={() => setSidebarOpen(o => !o)}
+            markers={markers}
+            onMarkerFocus={marker => {
+              setFocusTarget(marker)
+              setSidebarOpen(false)
+            }}
+          />
+          <PresenceAvatars />
+          <MusicPlayer />
+        </div>
+
+        {/* Footprint tab */}
+        <div className={activeTab === 'footprint' ? 'absolute inset-0' : 'hidden'}>
+          <FootprintView />
+        </div>
+      </div>
+
+      <BottomTabBar activeTab={activeTab} onTabChange={setActiveTab} />
+
       {dialogOpen && pendingLoc && (
         <MarkerDialog
           open={dialogOpen}

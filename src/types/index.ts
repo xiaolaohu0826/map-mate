@@ -16,3 +16,17 @@ export const MARKER_STYLE_EMOJI: Record<MarkerStyle, string> = {
 }
 
 export const MARKER_STYLES: MarkerStyle[] = ['dart', 'pin', 'heart']
+
+export interface Waypoint {
+  lat: number
+  lng: number
+  name: string
+  address: string
+}
+
+export interface Footprint {
+  id: string
+  title: string
+  waypoints: Waypoint[]
+  created_at: string
+}
