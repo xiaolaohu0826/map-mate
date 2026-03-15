@@ -145,12 +145,12 @@ export default function MapWrapper({
       const getInitialCenter = (): Promise<{ lat: number; lng: number }> =>
         new Promise(resolve => {
           if (!navigator.geolocation) {
-            resolve({ lat: 35, lng: 105 })
+            resolve({ lat: 35.6896, lng: 139.7006 })
             return
           }
           navigator.geolocation.getCurrentPosition(
             pos => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
-            () => resolve({ lat: 35, lng: 105 }),
+            () => resolve({ lat: 35.6896, lng: 139.7006 }),
             { timeout: 5000 }
           )
         })
