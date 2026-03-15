@@ -234,7 +234,7 @@ export default function FootprintView() {
       if (cancelled) return
       const map = new google.maps.Map(containerRef.current!, {
         center: { lat: 23.1291, lng: 113.2644 },
-        zoom: 1,
+        zoom: 3,
         mapTypeId: 'roadmap',
         styles: darkMapStyles,
         gestureHandling: 'greedy',
