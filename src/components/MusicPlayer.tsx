@@ -19,6 +19,7 @@ export default function MusicPlayer() {
       .then((list: string[]) => {
         const shuffled = [...list].sort(() => Math.random() - 0.5)
         setSongs(shuffled)
+        setPlaying(true)
       })
       .catch(() => {})
   }, [])
