@@ -88,14 +88,16 @@ export default function Home() {
               setSidebarOpen(false)
             }}
           />
-          <PresenceAvatars />
-          <MusicPlayer />
         </div>
 
         {/* Footprint tab */}
         <div className={activeTab === 'footprint' ? 'absolute inset-0' : 'hidden'}>
           <FootprintView />
         </div>
+
+        {/* Global overlays — always visible regardless of tab */}
+        <PresenceAvatars />
+        <MusicPlayer />
       </div>
 
       <BottomTabBar activeTab={activeTab} onTabChange={setActiveTab} />

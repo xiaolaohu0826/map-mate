@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState, useCallback } from 'react'
-import { Plus, Trash2, MapPin, X, Pencil } from 'lucide-react'
+import { Plus, Trash2, MapPin, X, Pencil, ChevronLeft, ChevronRight } from 'lucide-react'
 import { loadMaps, loadPlaces } from '@/lib/mapLoader'
 import { darkMapStyles } from '@/lib/mapStyles'
 import { supabase } from '@/lib/supabase'
@@ -124,6 +124,7 @@ export default function FootprintView() {
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [isCreating, setIsCreating] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
+  const [panelOpen, setPanelOpen] = useState(true)
   const [draftTitle, setDraftTitle] = useState('')
   const [draftWaypoints, setDraftWaypoints] = useState<DraftWaypoint[]>([
     { id: 'w0', inputValue: '' },
@@ -336,16 +337,34 @@ export default function FootprintView() {
       {/* Map */}
       <div ref={containerRef} className="absolute inset-0" />
 
+      {/* Toggle button when panel is closed */}
+      {!panelOpen && (
+        <button
+          onClick={() => setPanelOpen(true)}
+          className="absolute top-4 left-4 z-10 p-2 bg-gray-900/95 backdrop-blur-sm border border-gray-700 rounded-xl text-gray-300 hover:text-white transition-colors"
+        >
+          <ChevronRight className="w-5 h-5" />
+        </button>
+      )}
+
       {/* Side panel */}
-      <div className="absolute top-0 left-0 h-full w-72 bg-gray-900/95 backdrop-blur-sm border-r border-gray-800 flex flex-col">
-        <div className="p-4 border-b border-gray-800 flex items-center gap-2 flex-shrink-0">
-          <MapPin className="w-5 h-5 text-indigo-400" />
-          <h2 className="text-white font-semibold">足迹记录</h2>
+      <div className={`absolute top-0 left-0 h-full w-48 bg-gray-900/95 backdrop-blur-sm border-r border-gray-800 flex flex-col transition-transform duration-300 ${panelOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+        <div className="p-3 border-b border-gray-800 flex items-center justify-between flex-shrink-0">
+          <div className="flex items-center gap-2">
+            <MapPin className="w-4 h-4 text-indigo-400" />
+            <h2 className="text-white font-semibold text-sm">足迹记录</h2>
+          </div>
+          <button
+            onClick={() => setPanelOpen(false)}
+            className="text-gray-500 hover:text-white transition-colors"
+          >
+            <ChevronLeft className="w-4 h-4" />
+          </button>
         </div>
 
         {!isCreating ? (
           <>
-            <div className="mx-3 mt-3 flex gap-2 flex-shrink-0">
+            <div className="mx-2 mt-2 flex gap-1.5 flex-shrink-0">
               <button
                 onClick={() => setIsCreating(true)}
                 className="flex-1 flex items-center gap-2 justify-center py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium transition-colors"
@@ -374,7 +393,7 @@ export default function FootprintView() {
                   <div
                     key={fp.id}
                     onClick={() => setSelectedId(fp.id === selectedId ? null : fp.id)}
-                    className={`mx-3 mb-2 p-3 rounded-xl cursor-pointer transition-colors ${
+                    className={`mx-2 mb-2 p-2 rounded-xl cursor-pointer transition-colors ${
                       selectedId === fp.id
                         ? 'border bg-gray-800 hover:bg-gray-700'
                         : 'bg-gray-800 hover:bg-gray-700'
@@ -418,7 +437,7 @@ export default function FootprintView() {
             </div>
           </>
         ) : (
-          <div className="flex-1 overflow-y-auto p-3 flex flex-col gap-3">
+          <div className="flex-1 overflow-y-auto p-2 flex flex-col gap-2">
             <p className="text-gray-400 text-xs font-medium">{editingId ? '编辑足迹' : '新建足迹'}</p>
             <input
               type="text"
