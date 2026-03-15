@@ -142,8 +142,24 @@ export default function MapWrapper({
 
       placesLibRef.current = placesLib
 
+      const getInitialCenter = (): Promise<{ lat: number; lng: number }> =>
+        new Promise(resolve => {
+          if (!navigator.geolocation) {
+            resolve({ lat: 35, lng: 105 })
+            return
+          }
+          navigator.geolocation.getCurrentPosition(
+            pos => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+            () => resolve({ lat: 35, lng: 105 }),
+            { timeout: 5000 }
+          )
+        })
+
+      const center = await getInitialCenter()
+      if (cancelled) return
+
       const map = new google.maps.Map(containerRef.current!, {
-        center: { lat: 31.2304, lng: 121.4737 },
+        center,
         zoom: 12,
         mapTypeId: 'roadmap',
         styles: darkMapStyles,
