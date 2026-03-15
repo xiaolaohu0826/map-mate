@@ -11,6 +11,8 @@ export default function MusicPlayer() {
   const [volume, setVolume] = useState(0.5)
   const [expanded, setExpanded] = useState(false)
   const audioRef = useRef<HTMLAudioElement | null>(null)
+  // True when we want to play but browser hasn't unlocked autoplay yet
+  const pendingPlayRef = useRef(false)
 
   // Fetch song list once on mount
   useEffect(() => {
@@ -24,7 +26,7 @@ export default function MusicPlayer() {
       .catch(() => {})
   }, [])
 
-  // Create Audio instance once
+  // Create Audio instance once + listen for first user gesture to unlock autoplay
   useEffect(() => {
     const audio = new Audio()
     audio.volume = volume
@@ -34,9 +36,21 @@ export default function MusicPlayer() {
       setCurrentIndex(i => i + 1)
     })
 
+    const unlockAutoplay = () => {
+      if (pendingPlayRef.current && audio.paused) {
+        audio.play().catch(() => {})
+      }
+      document.removeEventListener('pointerdown', unlockAutoplay)
+      document.removeEventListener('keydown', unlockAutoplay)
+    }
+    document.addEventListener('pointerdown', unlockAutoplay)
+    document.addEventListener('keydown', unlockAutoplay)
+
     return () => {
       audio.pause()
       audio.src = ''
+      document.removeEventListener('pointerdown', unlockAutoplay)
+      document.removeEventListener('keydown', unlockAutoplay)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
@@ -48,7 +62,11 @@ export default function MusicPlayer() {
     const audio = audioRef.current
     if (!audio) return
     audio.src = `/music/${songs[idx]}`
-    if (playing) audio.play().catch(() => setPlaying(false))
+    if (playing) {
+      audio.play().catch(() => {
+        pendingPlayRef.current = true
+      })
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentIndex, songs])
 
@@ -61,8 +79,11 @@ export default function MusicPlayer() {
         const idx = currentIndex % songs.length
         audio.src = `/music/${songs[idx]}`
       }
-      audio.play().catch(() => setPlaying(false))
+      audio.play().catch(() => {
+        pendingPlayRef.current = true
+      })
     } else {
+      pendingPlayRef.current = false
       audio.pause()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
