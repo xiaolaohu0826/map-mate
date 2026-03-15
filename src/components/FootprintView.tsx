@@ -89,6 +89,7 @@ interface DraftWaypoint {
 export default function FootprintView() {
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<google.maps.Map | null>(null)
+  const infoWindowRef = useRef<google.maps.InfoWindow | null>(null)
   const routeLayerRef = useRef<(google.maps.Polyline | google.maps.Marker)[]>([])
 
   const [footprints, setFootprints] = useState<Footprint[]>([])
@@ -124,6 +125,20 @@ export default function FootprintView() {
           anchor: new google.maps.Point(15, 15),
         },
       })
+      marker.addListener('click', () => {
+        const iw = infoWindowRef.current
+        if (!iw) return
+        iw.setContent(
+          `<div style="color:#000;padding:8px;min-width:180px;font-family:sans-serif">
+            <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
+              <span style="background:${color};color:#fff;border-radius:50%;width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:bold;flex-shrink:0">${i + 1}</span>
+              <p style="margin:0;font-size:14px;font-weight:bold">${wp.name}</p>
+            </div>
+            ${wp.address ? `<p style="margin:0 0 6px;font-size:12px;color:#555">${wp.address}</p>` : ''}
+          </div>`
+        )
+        iw.open(map, marker)
+      })
       routeLayerRef.current.push(marker)
 
       if (i < waypoints.length - 1) {
@@ -131,7 +146,7 @@ export default function FootprintView() {
         const polyline = new google.maps.Polyline({
           path: [{ lat: wp.lat, lng: wp.lng }, { lat: next.lat, lng: next.lng }],
           strokeColor: color,
-          strokeWeight: 4,
+          strokeWeight: 2,
           strokeOpacity: 0.85,
           icons: [{
             icon: {
@@ -139,7 +154,7 @@ export default function FootprintView() {
               strokeColor: color,
               fillColor: color,
               fillOpacity: 1,
-              scale: 4,
+              scale: 3,
             },
             offset: '100%',
           }],
@@ -170,6 +185,8 @@ export default function FootprintView() {
         renderingType: google.maps.RenderingType.RASTER,
       })
       mapRef.current = map
+      infoWindowRef.current = new google.maps.InfoWindow()
+      map.addListener('click', () => infoWindowRef.current?.close())
 
       const { data } = await supabase
         .from('footprints')
