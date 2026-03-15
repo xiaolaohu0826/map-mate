@@ -29,7 +29,7 @@ export default function NotesSidebar({ open, onToggle, markers, onMarkerFocus }:
       >
         <div className="p-4 border-b border-gray-800 flex items-center gap-2">
           <MapPin className="w-5 h-5 text-indigo-400" />
-          <h2 className="text-white font-semibold text-base">我们的地方</h2>
+          <h2 className="text-white font-semibold text-base">已标记的地点</h2>
           <span className="ml-auto text-gray-400 text-xs bg-gray-800 px-2 py-0.5 rounded-full">
             {markers.length}
           </span>
