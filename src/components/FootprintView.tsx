@@ -105,14 +105,13 @@ export default function FootprintView() {
     routeLayerRef.current = []
   }, [])
 
-  const drawRoute = useCallback((waypoints: Waypoint[], colorOffset = 0) => {
+  const drawRoute = useCallback((waypoints: Waypoint[], color: string) => {
     const map = mapRef.current
     if (!map || waypoints.length < 1) return
 
     const bounds = new google.maps.LatLngBounds()
 
     waypoints.forEach((wp, i) => {
-      const color = LEG_COLORS[(i + colorOffset) % LEG_COLORS.length]
       bounds.extend({ lat: wp.lat, lng: wp.lng })
 
       const marker = new google.maps.Marker({
@@ -187,7 +186,7 @@ export default function FootprintView() {
     if (!mapRef.current || isCreating) return
     clearRouteLayer()
     const list = selectedId ? footprints.filter(f => f.id === selectedId) : footprints
-    list.forEach((f, i) => drawRoute(f.waypoints, i * 2))
+    list.forEach((f, i) => drawRoute(f.waypoints, LEG_COLORS[i % LEG_COLORS.length]))
   }, [footprints, isCreating, selectedId, clearRouteLayer, drawRoute])
 
   // Redraw draft while creating
@@ -195,7 +194,7 @@ export default function FootprintView() {
     if (!isCreating || !mapRef.current) return
     clearRouteLayer()
     const resolved = draftWaypoints.filter(w => w.place).map(w => w.place!)
-    if (resolved.length >= 1) drawRoute(resolved, 0)
+    if (resolved.length >= 1) drawRoute(resolved, LEG_COLORS[0])
   }, [draftWaypoints, isCreating, clearRouteLayer, drawRoute])
 
   const addWaypoint = () =>
@@ -264,7 +263,7 @@ export default function FootprintView() {
                   还没有足迹，记录你们去过的地方吧
                 </p>
               ) : (
-                footprints.map((fp, fi) => (
+                footprints.map((fp, i) => (
                   <div
                     key={fp.id}
                     onClick={() => setSelectedId(fp.id === selectedId ? null : fp.id)}
@@ -279,11 +278,11 @@ export default function FootprintView() {
                         <p className="text-white text-sm font-medium truncate">{fp.title}</p>
                         <p className="text-gray-400 text-xs mt-0.5">{fp.waypoints.length} 个地点</p>
                         <div className="mt-1.5 flex flex-col gap-0.5">
-                          {fp.waypoints.map((wp, i) => (
-                            <span key={i} className="text-xs text-gray-400 flex items-center gap-1.5 truncate">
+                          {fp.waypoints.map((wp, wi) => (
+                            <span key={wi} className="text-xs text-gray-400 flex items-center gap-1.5 truncate">
                               <span
                                 className="w-2.5 h-2.5 rounded-full flex-shrink-0"
-                                style={{ backgroundColor: LEG_COLORS[(i + fi * 2) % LEG_COLORS.length] }}
+                                style={{ backgroundColor: LEG_COLORS[i % LEG_COLORS.length] }}
                               />
                               {wp.name}
                             </span>
