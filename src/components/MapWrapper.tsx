@@ -4,6 +4,7 @@ import { useEffect, useRef, useCallback } from 'react'
 import { loadMaps, loadPlaces } from '@/lib/mapLoader'
 import { darkMapStyles } from '@/lib/mapStyles'
 import { MarkerData, MARKER_STYLE_EMOJI } from '@/types'
+import { PlaceResult } from '@/components/SearchBar'
 
 interface MapWrapperProps {
   markers: MarkerData[]
@@ -11,6 +12,8 @@ interface MapWrapperProps {
   focusTarget: MarkerData | null
   onFocusComplete: () => void
   onPanReady: (panFn: (lat: number, lng: number, zoom?: number) => void) => void
+  searchResult: PlaceResult | null
+  onSearchResultClear: () => void
 }
 
 function createEmojiIcon(emoji: string): string {
@@ -26,6 +29,8 @@ export default function MapWrapper({
   focusTarget,
   onFocusComplete,
   onPanReady,
+  searchResult,
+  onSearchResultClear,
 }: MapWrapperProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const zoomLabelRef = useRef<HTMLDivElement>(null)
@@ -35,6 +40,7 @@ export default function MapWrapper({
   const markerMapRef = useRef<Map<string, google.maps.Marker>>(new Map())
   const infoWindowRef = useRef<google.maps.InfoWindow | null>(null)
   const poiMarkersRef = useRef<google.maps.Marker[]>([])
+  const searchMarkerRef = useRef<google.maps.Marker | null>(null)
 
   const clearPoiMarkers = useCallback(() => {
     poiMarkersRef.current.forEach(m => m.setMap(null))
@@ -84,6 +90,11 @@ export default function MapWrapper({
                 onMapClick(loc.lat(), loc.lng(), place.name ?? undefined)
               })
               m.addListener('click', () => {
+                if (searchMarkerRef.current) {
+                  searchMarkerRef.current.setMap(null)
+                  searchMarkerRef.current = null
+                  onSearchResultClear()
+                }
                 if (!infoWindowRef.current) return
                 const stars = place.rating
                   ? '⭐'.repeat(Math.round(place.rating)) + ` ${place.rating.toFixed(1)}`
@@ -214,6 +225,42 @@ export default function MapWrapper({
     }
     onFocusComplete()
   }, [focusTarget, onFocusComplete])
+
+  // Show temporary search result marker
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map) return
+    if (searchMarkerRef.current) {
+      searchMarkerRef.current.setMap(null)
+      searchMarkerRef.current = null
+    }
+    if (!searchResult) return
+
+    const marker = new google.maps.Marker({
+      position: { lat: searchResult.lat, lng: searchResult.lng },
+      map,
+      title: searchResult.name,
+      icon: {
+        url: createEmojiIcon('📍'),
+        scaledSize: new google.maps.Size(40, 40),
+        anchor: new google.maps.Point(20, 40),
+      },
+    })
+    searchMarkerRef.current = marker
+
+    if (infoWindowRef.current) {
+      infoWindowRef.current.setContent(
+        `<div style="color:#000;padding:8px;min-width:200px;font-family:sans-serif">
+          <p style="margin:0 0 4px;font-size:14px;font-weight:bold">${searchResult.name}</p>
+          <p style="margin:0 0 6px;font-size:12px;color:#555">${searchResult.address}</p>
+          ${searchResult.placeId
+            ? `<a href="https://www.google.com/maps/place/?q=place_id:${searchResult.placeId}" target="_blank" style="font-size:12px;color:#1a73e8">在 Google Maps 查看 →</a>`
+            : ''}
+        </div>`
+      )
+      infoWindowRef.current.open(map, marker)
+    }
+  }, [searchResult])
 
   return (
     <div className="relative w-full h-full">

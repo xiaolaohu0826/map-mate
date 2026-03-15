@@ -4,8 +4,16 @@ import { useEffect, useRef } from 'react'
 import { Search } from 'lucide-react'
 import { loadPlaces } from '@/lib/mapLoader'
 
+export interface PlaceResult {
+  lat: number
+  lng: number
+  name: string
+  address: string
+  placeId?: string
+}
+
 interface SearchBarProps {
-  onPlaceSelected: (lat: number, lng: number, name: string) => void
+  onPlaceSelected: (result: PlaceResult) => void
 }
 
 export default function SearchBar({ onPlaceSelected }: SearchBarProps) {
@@ -21,17 +29,19 @@ export default function SearchBar({ onPlaceSelected }: SearchBarProps) {
 
       const { Autocomplete } = placesLib
       const autocomplete = new Autocomplete(inputRef.current, {
-        fields: ['geometry', 'name'],
+        fields: ['geometry', 'name', 'formatted_address', 'place_id'],
       })
 
       autocomplete.addListener('place_changed', async () => {
         const place = autocomplete.getPlace()
         if (place.geometry?.location) {
-          onPlaceSelected(
-            place.geometry.location.lat(),
-            place.geometry.location.lng(),
-            place.name ?? ''
-          )
+          onPlaceSelected({
+            lat: place.geometry.location.lat(),
+            lng: place.geometry.location.lng(),
+            name: place.name ?? '',
+            address: place.formatted_address ?? place.name ?? '',
+            placeId: place.place_id,
+          })
         } else if (place.name) {
           // Enter pressed without selecting dropdown — fall back to Geocoder
           try {
@@ -40,8 +50,15 @@ export default function SearchBar({ onPlaceSelected }: SearchBarProps) {
             const result = await geocoder.geocode({ address: place.name })
             const loc = result.results?.[0]?.geometry?.location
             if (loc) {
-              onPlaceSelected(loc.lat(), loc.lng(), result.results[0].formatted_address ?? place.name)
-              if (inputRef.current) inputRef.current.value = result.results[0].formatted_address ?? place.name
+              const addr = result.results[0].formatted_address ?? place.name
+              onPlaceSelected({
+                lat: loc.lat(),
+                lng: loc.lng(),
+                name: place.name,
+                address: addr,
+                placeId: result.results[0].place_id,
+              })
+              if (inputRef.current) inputRef.current.value = addr
             }
           } catch (e) {
             console.warn('Geocoding failed:', e)

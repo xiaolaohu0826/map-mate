@@ -7,6 +7,7 @@ import { MarkerData, MarkerStyle } from '@/types'
 import MarkerDialog from '@/components/MarkerDialog'
 import NotesSidebar from '@/components/NotesSidebar'
 import MusicPlayer from '@/components/MusicPlayer'
+import { PlaceResult } from '@/components/SearchBar'
 
 const MapWrapper = dynamic(() => import('@/components/MapWrapper'), { ssr: false })
 const SearchBar = dynamic(() => import('@/components/SearchBar'), { ssr: false })
@@ -17,6 +18,7 @@ export default function Home() {
   const [pendingLoc, setPendingLoc] = useState<{ lat: number; lng: number; placeName?: string } | null>(null)
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [focusTarget, setFocusTarget] = useState<MarkerData | null>(null)
+  const [searchResult, setSearchResult] = useState<PlaceResult | null>(null)
   const panToRef = useRef<((lat: number, lng: number, zoom?: number) => void) | null>(null)
 
   // Load existing markers from Supabase
@@ -52,8 +54,9 @@ export default function Home() {
     [pendingLoc]
   )
 
-  const handlePlaceSelected = useCallback((lat: number, lng: number) => {
-    panToRef.current?.(lat, lng, 14)
+  const handlePlaceSelected = useCallback((result: PlaceResult) => {
+    panToRef.current?.(result.lat, result.lng, 14)
+    setSearchResult(result)
   }, [])
 
   const handlePanReady = useCallback((panFn: (lat: number, lng: number, zoom?: number) => void) => {
@@ -68,6 +71,8 @@ export default function Home() {
         focusTarget={focusTarget}
         onFocusComplete={() => setFocusTarget(null)}
         onPanReady={handlePanReady}
+        searchResult={searchResult}
+        onSearchResultClear={() => setSearchResult(null)}
       />
       <SearchBar onPlaceSelected={handlePlaceSelected} />
       <NotesSidebar

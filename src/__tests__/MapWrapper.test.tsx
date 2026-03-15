@@ -74,6 +74,8 @@ const defaultProps = {
   focusTarget: null,
   onFocusComplete: jest.fn(),
   onPanReady: jest.fn(),
+  searchResult: null,
+  onSearchResultClear: jest.fn(),
 }
 
 describe('MapWrapper', () => {
