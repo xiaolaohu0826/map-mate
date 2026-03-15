@@ -136,7 +136,7 @@ export default function FootprintView() {
     routeLayerRef.current = []
   }, [])
 
-  const drawRoute = useCallback((waypoints: Waypoint[], color: string) => {
+  const drawRoute = useCallback((waypoints: Waypoint[], color: string, fitView = false) => {
     const map = mapRef.current
     if (!map || waypoints.length < 1) return
 
@@ -219,8 +219,10 @@ export default function FootprintView() {
       }
     })
 
-    if (waypoints.length > 1) map.fitBounds(bounds, 80)
-    else map.panTo({ lat: waypoints[0].lat, lng: waypoints[0].lng })
+    if (fitView) {
+      if (waypoints.length > 1) map.fitBounds(bounds, 80)
+      else map.panTo({ lat: waypoints[0].lat, lng: waypoints[0].lng })
+    }
   }, [])
 
   // Initialize map
@@ -259,7 +261,8 @@ export default function FootprintView() {
     clearRouteLayer()
     footprints.forEach((f, i) => {
       if (selectedId && f.id !== selectedId) return
-      drawRoute(f.waypoints, LEG_COLORS[i % LEG_COLORS.length])
+      // Only auto-fit when a single footprint is focused
+      drawRoute(f.waypoints, LEG_COLORS[i % LEG_COLORS.length], !!selectedId)
     })
   }, [footprints, isCreating, selectedId, clearRouteLayer, drawRoute])
 
@@ -268,7 +271,7 @@ export default function FootprintView() {
     if (!isCreating || !mapRef.current) return
     clearRouteLayer()
     const resolved = draftWaypoints.filter(w => w.place).map(w => w.place!)
-    if (resolved.length >= 1) drawRoute(resolved, LEG_COLORS[0])
+    if (resolved.length >= 1) drawRoute(resolved, LEG_COLORS[0], true)
   }, [draftWaypoints, isCreating, clearRouteLayer, drawRoute])
 
   const addWaypoint = () =>
