@@ -1,21 +1,22 @@
-import { writeFile, mkdir } from 'fs/promises'
-import path from 'path'
+import { supabase } from '@/lib/supabase'
 import { NextRequest, NextResponse } from 'next/server'
+
+const BUCKET = 'avatars'
 
 export async function POST(request: NextRequest) {
   const formData = await request.formData()
   const file = formData.get('file') as File | null
   if (!file) return NextResponse.json({ error: 'no file' }, { status: 400 })
 
-  const bytes = await file.arrayBuffer()
-  const buffer = Buffer.from(bytes)
-
-  const avatarDir = path.join(process.cwd(), 'public', 'avatar')
-  await mkdir(avatarDir, { recursive: true })
-
-  // Sanitize filename
   const filename = file.name.replace(/[^a-zA-Z0-9._-]/g, '_')
-  await writeFile(path.join(avatarDir, filename), buffer)
+  const bytes = await file.arrayBuffer()
 
-  return NextResponse.json({ filename })
+  const { error } = await supabase.storage
+    .from(BUCKET)
+    .upload(filename, bytes, { contentType: file.type, upsert: true })
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  const { data } = supabase.storage.from(BUCKET).getPublicUrl(filename)
+  return NextResponse.json({ filename, url: data.publicUrl })
 }

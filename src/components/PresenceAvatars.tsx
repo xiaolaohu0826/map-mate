@@ -89,7 +89,7 @@ export default function PresenceAvatars() {
           >
             {user.avatar ? (
               <img
-                src={`/avatar/${user.avatar}`}
+                src={user.avatar}
                 alt={user.emoji}
                 className="w-full h-full object-cover"
               />
